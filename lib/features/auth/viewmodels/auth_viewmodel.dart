@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/local_session_service.dart';
+
 import '../data/auth_service.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
+  final LocalSessionService _localSessionService = LocalSessionService();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -54,6 +57,7 @@ class AuthViewModel extends ChangeNotifier {
         email: email.trim(),
         password: password.trim(),
       );
+      await _localSessionService.saveSessionData(loginMethod: 'email_password');
 
       _currentUser = credential.user; // User state update hona zaroori hai
       _setLoading(false);
@@ -73,6 +77,8 @@ class AuthViewModel extends ChangeNotifier {
     _errorMessage = null;
     try {
       await _authService.signUpWithEmail(email: email, password: password);
+      await _localSessionService.saveSessionData(loginMethod: 'google');
+
       _setLoading(false);
       return true;
     } catch (e) {
@@ -101,8 +107,13 @@ class AuthViewModel extends ChangeNotifier {
   Future<void> logout() async {
     _setLoading(true);
     await _authService.signOut();
+    await _authService.signOut();
+    await _localSessionService.clearSessionData(); // Requirement fulfilled
+    _currentUser = null;
+    notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('is_logged_in');
     _setLoading(false);
   }
 }
+
