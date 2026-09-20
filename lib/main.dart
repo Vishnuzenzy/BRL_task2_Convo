@@ -13,7 +13,12 @@ import 'features/auth/views/auth_wrapper.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const ConvoApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => AuthViewModel())],
+      child: const ConvoApp(),
+    ),
+  );
 }
 
 class ConvoApp extends StatelessWidget {

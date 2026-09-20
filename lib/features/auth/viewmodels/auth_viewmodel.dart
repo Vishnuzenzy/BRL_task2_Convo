@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../data/auth_service.dart';
 
 class AuthViewModel extends ChangeNotifier {
@@ -46,14 +47,22 @@ class AuthViewModel extends ChangeNotifier {
   // Email Login
   Future<bool> login(String email, String password) async {
     _setLoading(true);
-    _errorMessage = null;
+    clearError();
+
     try {
-      await _authService.signInWithEmail(email: email, password: password);
+      final credential = await _authService.signInWithEmail(
+        email: email.trim(),
+        password: password.trim(),
+      );
+
+      _currentUser = credential.user; // User state update hona zaroori hai
       _setLoading(false);
+      notifyListeners(); // <-- YE LINE SABSE IMPORTANT HAI
       return true;
     } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _errorMessage = e.toString();
       _setLoading(false);
+      notifyListeners();
       return false;
     }
   }

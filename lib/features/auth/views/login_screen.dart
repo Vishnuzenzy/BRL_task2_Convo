@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../viewmodels/auth_viewmodel.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/validators.dart';
@@ -25,8 +26,47 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final authVm = context.read<AuthViewModel>();
+    final success = await authVm.login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (!success && authVm.errorMessage != null) {
+      _showErrorSnackBar(authVm.errorMessage!);
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    final authVm = context.read<AuthViewModel>();
+    final success = await authVm.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (!success && authVm.errorMessage != null) {
+      _showErrorSnackBar(authVm.errorMessage!);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authVm = context.watch<AuthViewModel>();
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -78,7 +118,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                       labelText: 'Email Address',
-                      prefixIcon: Icon(Icons.email_outlined, color: AppTheme.textMuted),
+                      prefixIcon: Icon(
+                        Icons.email_outlined,
+                        color: AppTheme.textMuted,
+                      ),
                     ),
                     validator: Validators.validateEmail,
                   ),
@@ -90,13 +133,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.textMuted),
+                      prefixIcon: const Icon(
+                        Icons.lock_outline,
+                        color: AppTheme.textMuted,
+                      ),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                           color: AppTheme.textMuted,
                         ),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                       ),
                     ),
                     validator: Validators.validatePassword,
@@ -105,12 +155,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // Login Button
                   ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        // Backend wired in Day 2
-                      }
-                    },
-                    child: const Text('Log In'),
+                    onPressed: authVm.isLoading ? null : _handleLogin,
+                    child: authVm.isLoading
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text('Log In'),
                   ),
                   const SizedBox(height: 16),
 
@@ -120,7 +177,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       Expanded(child: Divider()),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 12),
-                        child: Text('OR', style: TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+                        child: Text(
+                          'OR',
+                          style: TextStyle(
+                            color: AppTheme.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                       Expanded(child: Divider()),
                     ],
@@ -132,20 +195,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                       side: const BorderSide(color: AppTheme.borderColor),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     icon: Image.network(
                       'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
                       height: 20,
-                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, size: 24, color: Colors.red),
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.g_mobiledata,
+                        size: 24,
+                        color: Colors.red,
+                      ),
                     ),
                     label: const Text(
                       'Sign in with Google',
-                      style: TextStyle(color: AppTheme.textDark, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: AppTheme.textDark,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    onPressed: () {
-                      // Backend wired in Day 2
-                    },
+                    onPressed: authVm.isLoading ? null : _handleGoogleSignIn,
                   ),
                   const SizedBox(height: 28),
 
@@ -153,17 +223,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Don't have an account?", style: TextStyle(color: AppTheme.textMuted)),
+                      const Text(
+                        "Don't have an account?",
+                        style: TextStyle(color: AppTheme.textMuted),
+                      ),
                       TextButton(
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const SignupScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const SignupScreen(),
+                            ),
                           );
                         },
                         child: const Text(
                           'Sign Up',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryRoyalBlue),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryRoyalBlue,
+                          ),
                         ),
                       ),
                     ],
