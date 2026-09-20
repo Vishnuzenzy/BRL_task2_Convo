@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/validators.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import 'package:provider/provider.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -25,8 +27,47 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  Future<void> _handleSignup() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final authVm = context.read<AuthViewModel>();
+    final success = await authVm.signup(
+      _emailController.text,
+      _passwordController.text,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Account created successfully! Welcome to Convo 🎉'),
+          backgroundColor: Colors.green.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      Navigator.pop(context); // Account bante hi login screen par wapas le aayega
+    } else if (authVm.errorMessage != null) {
+      _showErrorSnackBar(authVm.errorMessage!);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authVm = context.watch<AuthViewModel>();
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -110,13 +151,20 @@ class _SignupScreenState extends State<SignupScreen> {
 
                   // Signup Button
                   ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        // Backend wired in Day 2
-                      }
-                    },
-                    child: const Text('Create Account'),
+                    onPressed: authVm.isLoading ? null : _handleSignup,
+                    child: authVm.isLoading
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text('Create Account'),
                   ),
+                  const Text('Create Account'),
+                  
                   const SizedBox(height: 24),
 
                   Row(
