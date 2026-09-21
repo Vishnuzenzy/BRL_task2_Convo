@@ -2,13 +2,11 @@
 
 A robust Flutter authentication application implementing MVVM architecture, persistent authentication states, Google Sign-In, and local session management.
 
-Built for **Probation Task 2** (Deadline: 22nd Sept, 3:00 PM).
 
 ---# Convo - Authentication & Session Persistence App
 
 A robust Flutter authentication application implementing MVVM architecture, persistent authentication states, Google Sign-In, and local session management.
 
-Built for **Probation Task 2** (Deadline: 22nd Sept, 3:00 PM).
 
 ---
 
