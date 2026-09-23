@@ -11,19 +11,32 @@ class AuthService {
   // Current logged in user
   User? get currentUser => _auth.currentUser;
 
-  // Sign up with Email and Password
+  // Sign up with Email and Password (MODIFIED)
   Future<UserCredential> signUpWithEmail({
     required String email,
     required String password,
   }) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(
+      final credential = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
+      // NEW: Account bante hi verification email send karna
+      await credential.user?.sendEmailVerification();
+      return credential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }
+  }
+
+  // NEW: User status refresh karne ke liye
+  Future<void> reloadUser() async {
+    await _auth.currentUser?.reload();
+  }
+
+  // NEW: Verification email dobara bhejne ke liye
+  Future<void> sendEmailVerification() async {
+    await _auth.currentUser?.sendEmailVerification();
   }
 
   // Log in with Email and Password

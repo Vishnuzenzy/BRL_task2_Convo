@@ -18,6 +18,7 @@ class AuthViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   User? get currentUser => _currentUser;
   bool get isAuthenticated => _currentUser != null;
+  bool get isEmailVerified => _currentUser?.emailVerified ?? false;
 
   AuthViewModel() {
     _initAuthState();
@@ -114,6 +115,32 @@ class AuthViewModel extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('is_logged_in');
     _setLoading(false);
+  }
+
+  // Refresh User State to check verification status
+  Future<void> checkEmailVerified() async {
+    _setLoading(true);
+    try {
+      await _authService.reloadUser();
+      // Reload hone ke baad naya user instance ViewModel me update karo
+      _currentUser = _authService.currentUser;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Resend verification email manually
+  Future<void> resendVerificationEmail() async {
+    try {
+      await _authService.sendEmailVerification();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
   }
 }
 
