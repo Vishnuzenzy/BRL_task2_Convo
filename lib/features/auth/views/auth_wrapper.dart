@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../viewmodels/auth_viewmodel.dart';
 import 'login_screen.dart';
 import 'main_navigation_screen.dart';
-import 'verify_email_screen.dart'; 
+import 'verify_email_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -15,7 +16,7 @@ class AuthWrapper extends StatelessWidget {
     if (authVm.isAuthenticated) {
       // Check if email is verified. (Google Sign-In usually auto-verifies).
       if (authVm.isEmailVerified) {
-        return const HomeScreen();
+        return const MainNavigationScreen();
       } else {
         return const VerifyEmailScreen();
       }

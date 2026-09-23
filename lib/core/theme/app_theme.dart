@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Royal Blue Theme Colors
   static const Color primaryRoyalBlue = Color(0xFF1E40AF);
   static const Color secondaryBlue = Color(0xFF3B82F6);
   static const Color backgroundLight = Color(0xFFF8FAFC);
