@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../models/discussion_model.dart';
+import '../data/discussion_service.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -11,34 +12,24 @@ class FeedScreen extends StatefulWidget {
 }
 
 class _FeedScreenState extends State<FeedScreen> {
-  final List<DiscussionModel> _discussions = [
-    DiscussionModel(
-      id: '1',
-      title: 'Best resources for Vector Calculus and Circuit Logic?',
-      author: 'Aman Sharma',
-      tag: '#FirstYear',
-      likes: 29,
-      replies: 14,
-    ),
-    DiscussionModel(
-      id: '2',
-      title: 'Commit Hackathon round 2 updates and tips',
-      author: 'OpenSource Team',
-      tag: '#Hackathon',
-      likes: 64,
-      replies: 32,
-    ),
-    DiscussionModel(
-      id: '3',
-      title: 'AKTU Odd-Semester exam guidelines discussion thread',
-      author: 'Rahul Verma',
-      tag: '#Exams',
-      likes: 19,
-      replies: 8,
-    ),
-  ];
-
+  final DiscussionService _discussionService = DiscussionService();
   final List<String> _tags = ['#General', '#FirstYear', '#Coding', '#Exams', '#Hackathon'];
+
+  Color _getTagColor(String tag) {
+    switch (tag) {
+      case '#FirstYear': return Colors.blue;
+      case '#Coding': return Colors.purple;
+      case '#Exams': return Colors.red;
+      case '#Hackathon': return Colors.orange;
+      default: return Colors.teal;
+    }
+  }
+
+  Color _getAvatarColor(String name) {
+    final colors = [Colors.indigo, Colors.pink, Colors.deepOrange, Colors.green, Colors.deepPurple];
+    if (name.isEmpty) return Colors.indigo;
+    return colors[name.codeUnitAt(0) % colors.length];
+  }
 
   void _openCreateDiscussionSheet(BuildContext context) {
     final titleController = TextEditingController();
@@ -47,58 +38,45 @@ class _FeedScreenState extends State<FeedScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) => Padding(
           padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 24,
+            left: 20, right: 20, top: 24,
             bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Start Discussion',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(ctx),
-                  )
-                ],
-              ),
-              const SizedBox(height: 12),
+              const Text('Start a Conversation ✨', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+              const SizedBox(height: 16),
               TextField(
                 controller: titleController,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: 'What topic or question do you want to discuss?',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  hintText: "What's on your mind?",
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('Select Tag:', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 children: _tags.map((tag) {
                   final isSelected = selectedTag == tag;
                   return ChoiceChip(
-                    label: Text(tag),
+                    label: Text(tag, style: TextStyle(color: isSelected ? Colors.white : Colors.black87)),
                     selected: isSelected,
-                    selectedColor: const Color(0xFF1E3A8A).withValues(alpha: 0.2),
+                    selectedColor: _getTagColor(tag),
+                    backgroundColor: Colors.grey.shade200,
+                    showCheckmark: false,
                     onSelected: (val) {
-                      if (val) {
-                        setModalState(() => selectedTag = tag);
-                      }
+                      if (val) setModalState(() => selectedTag = tag);
                     },
                   );
                 }).toList(),
@@ -110,33 +88,27 @@ class _FeedScreenState extends State<FeedScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E3A8A),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     final text = titleController.text.trim();
                     if (text.isEmpty) return;
 
                     final user = context.read<AuthViewModel>().currentUser;
-                    final authorName = user?.displayName ?? 
-                        (user?.email?.split('@')[0] ?? 'Campus Member');
+                    final authorName = user?.displayName ?? (user?.email?.split('@')[0] ?? 'Campus Member');
 
-                    setState(() {
-                      _discussions.insert(
-                        0,
-                        DiscussionModel(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          title: text,
-                          author: authorName,
-                          tag: selectedTag,
-                          likes: 0,
-                          replies: 0,
-                        ),
-                      );
-                    });
+                    await _discussionService.addDiscussion(
+                      DiscussionModel(
+                        id: '',
+                        title: text,
+                        author: authorName,
+                        tag: selectedTag,
+                      ),
+                    );
 
-                    Navigator.pop(ctx);
+                    if (ctx.mounted) Navigator.pop(ctx);
                   },
-                  child: const Text('Post Discussion', style: TextStyle(color: Colors.white, fontSize: 16)),
+                  child: const Text('Post Now', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -149,96 +121,112 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Convo Discussions', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Campus Feed', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _discussions.length,
-        itemBuilder: (context, index) {
-          final item = _discussions[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            elevation: 0.5,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: StreamBuilder<List<DiscussionModel>>(
+        stream: _discussionService.getDiscussionsStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF1E3A8A)));
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}', textAlign: TextAlign.center));
+          }
+
+          final discussions = snapshot.data ?? [];
+          if (discussions.isEmpty) {
+            return const Center(child: Text('No discussions yet. Start one! 🚀', style: TextStyle(fontSize: 16, color: Colors.grey)));
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: discussions.length,
+            itemBuilder: (context, index) {
+              final item = discussions[index];
+              final tagColor = _getTagColor(item.tag);
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        item.author,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
-                      ),
-                      Chip(
-                        visualDensity: VisualDensity.compact,
-                        label: Text(item.tag, style: const TextStyle(fontSize: 11, color: Color(0xFF1E3A8A))),
-                        backgroundColor: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      InkWell(
-                        onTap: () {
-                          setState(() {
-                            if (item.isLiked) {
-                              item.likes--;
-                              item.isLiked = false;
-                            } else {
-                              item.likes++;
-                              item.isLiked = true;
-                            }
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: Row(
-                            children: [
-                              Icon(
-                                item.isLiked ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
-                                size: 16,
-                                color: item.isLiked ? const Color(0xFF1E3A8A) : Colors.grey.shade600,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${item.likes}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: item.isLiked ? const Color(0xFF1E3A8A) : Colors.grey,
-                                  fontWeight: item.isLiked ? FontWeight.bold : FontWeight.normal,
-                                ),
-                              ),
-                            ],
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: _getAvatarColor(item.author).withValues(alpha: 0.2),
+                            child: Text(
+                              item.author.isNotEmpty ? item.author[0].toUpperCase() : 'U',
+                              style: TextStyle(color: _getAvatarColor(item.author), fontWeight: FontWeight.bold),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 10),
+                          Text(item.author, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(color: tagColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+                            child: Text(item.tag, style: TextStyle(fontSize: 11, color: tagColor, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 16),
-                      Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 4),
-                      Text('${item.replies} replies', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(height: 12),
+                      Text(item.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, height: 1.4)),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          InkWell(
+                            onTap: () => _discussionService.likeDiscussion(item.id, item.likes),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(20)),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.rocket_launch_rounded, size: 16, color: Colors.orange),
+                                  const SizedBox(width: 6),
+                                  Text('${item.likes}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(20)),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.chat_bubble_rounded, size: 16, color: Colors.grey),
+                                const SizedBox(width: 6),
+                                Text('${item.replies}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFF1E3A8A),
         onPressed: () => _openCreateDiscussionSheet(context),
-        child: const Icon(Icons.add_comment_rounded, color: Colors.white),
+        icon: const Icon(Icons.edit, color: Colors.white),
+        label: const Text('Post', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }

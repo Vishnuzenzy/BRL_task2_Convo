@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'feed_screen.dart';
 import 'profile_screen.dart';
+import 'explore_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -14,17 +16,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     FeedScreen(),
-    Center(child: Text('Explore Campus Channels', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500))),
+    ExploreScreen(),
     ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) => setState(() => _currentIndex = index),
