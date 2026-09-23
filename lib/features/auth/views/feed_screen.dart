@@ -54,6 +54,7 @@ class _FeedScreenState extends State<FeedScreen> {
   Future<void> _confirmLogout(BuildContext context) async {
     final shouldLogout = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Confirm Logout', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -77,7 +78,8 @@ class _FeedScreenState extends State<FeedScreen> {
     );
 
     if (shouldLogout == true && context.mounted) {
-      context.read<AuthViewModel>().logout();
+      Navigator.of(context).pop(); // Dialog confirm hone ke baad Drawer close karega
+      await context.read<AuthViewModel>().logout();
     }
   }
 
@@ -334,10 +336,7 @@ class _FeedScreenState extends State<FeedScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  onTap: () {
-                    Navigator.pop(context); // Pehle drawer close karo
-                    _confirmLogout(context); // Fir popup dikhao
-                  },
+                  onTap: () => _confirmLogout(context),
                 ),
               ],
             );
